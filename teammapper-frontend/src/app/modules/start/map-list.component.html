@@ -9,8 +9,12 @@
       }}</a>
     </span>
     <span matLine>
-      wird gelöscht am
-      {{ cachedMapEntry.cachedAdminMapValue.ttl | date : 'dd.MM.YYYY' }}</span
+      vom
+      {{ cachedMapEntry.cachedAdminMapValue.createdAt | date : 'dd.MM.YYYY' }}
+      um
+      {{ cachedMapEntry.cachedAdminMapValue.createdAt | date : 'HH:mm' }}
+      Uhr
+      </span
     >
   </mat-list-item>
 </mat-list>
