@@ -8,8 +8,7 @@
     </button>
   </a>
   <button
-    [ngClass]="{ 'mat-button-disabled': editDisabled }"
-    (click)="upload.click()"
+    [matMenuTriggerFor]="import_map"
     [title]="'TOOLTIPS.IMPORT_MAP' | translate"
     color="primary"
     mat-icon-button>
@@ -21,7 +20,13 @@
     (input)="initJSONUpload($event)"
     accept="application/json"
     [disabled]="editDisabled"
-    #upload />
+    #uploadjson />
+    <input
+    id="mermaid-upload"
+    type="file"
+    (input)="initMermaidUpload($event)"
+    [disabled]="editDisabled"
+    #uploadmermaid />
   <button
     [matMenuTriggerFor]="export_map"
     [title]="'TOOLTIPS.EXPORT_MAP' | translate"
@@ -36,6 +41,16 @@
     mat-icon-button>
     <mat-icon>share</mat-icon>
   </button>
+  <mat-menu #import_map="matMenu">
+    <button (click)="uploadjson.click()" mat-menu-item>
+      <mat-icon>insert_drive_file</mat-icon>
+      <span>{{ 'GENERAL.JSON' | translate }}</span>
+    </button>
+    <button (click)="uploadmermaid.click()" mat-menu-item>
+      <mat-icon>insert_drive_file</mat-icon>
+      <span>{{ 'GENERAL.MERMAID' | translate }}</span>
+    </button>
+  </mat-menu>
   <mat-menu #export_map="matMenu">
     <button (click)="exportMap('json')" mat-menu-item>
       <mat-icon>insert_drive_file</mat-icon>

@@ -134,6 +134,17 @@ export class ToolbarComponent {
     fileReader.readAsText(fileUpload.files[0]);
   }
 
+  public initMermaidUpload(event: InputEvent) {
+    const fileReader = new FileReader();
+
+    fileReader.onload = (_fileEvent: Event) => {
+      this.mmpService.importMap(fileReader.result.toString());
+    };
+
+    const fileUpload: HTMLInputElement = event.target as HTMLInputElement;
+    fileReader.readAsText(fileUpload.files[0]);
+  }
+
   private isValidLink(input: string) {
     try {
       new URL(input);
