@@ -15,8 +15,9 @@ import {
   OptionParameters,
   UserNodeProperties,
 } from '@mmp/map/types';
-import { COLORS, EMPTY_IMAGE_DATA } from './mmp-utils';
+import { COLORS, EMPTY_IMAGE_DATA, createEmptyClientNode } from './mmp-utils';
 import { CachedMapOptions } from 'src/app/shared/models/cached-map.model';
+import Node from '@mmp/map/models/node';
 
 /**
  * Mmp wrapper service with mmp and other functions.
@@ -457,6 +458,67 @@ export class MmpService implements OnDestroy {
    */
   public importMap(json: string) {
     this.new(JSON.parse(json));
+  }
+
+  private normalizeIndentation(lines: string[]): string[] {
+    // Filter out empty lines and the 'mindmap' declaration
+    const contentLines = lines
+      .filter(line => line.trim())
+      .filter(line => line.trim() !== 'mindmap');
+    
+    // Find minimum indentation level
+    const minIndent = Math.min(
+      ...contentLines.map(line => line.search(/\S/))
+    );
+    
+    // Subtract minimum indentation from all lines
+    return contentLines.map(line => line.slice(minIndent));
+  }
+
+  /**
+   * Convert a mermaid based mindmap to JSON
+   */
+  public convertMermaidToJSON(mermaid: string) {
+    const lines = mermaid.split('\n')
+    const normalizedLines = this.normalizeIndentation(lines);
+    console.log(normalizedLines)
+    const nodes: Node[] = [];
+    const indentationMap = new Map<number, string>();  // Maps indentation level to parent ID
+
+    if (lines[0].trim() === 'mindmap') {
+      // Process each line
+      normalizedLines.forEach(line => {
+        // Skip the mindmap declaration
+        if (line.trim() === 'mindmap') return;
+        
+        // Calculate indentation level
+        const indentationLevel = line.search(/\S/);
+        const content = line.trim();
+        console.log(`Name: ${content}, Indentation level: ${indentationLevel}`)
+        
+        // Extract node name
+        let nodeName = content.replace(/<br\s*\/>/g, '\n');
+        
+        // Handle root node
+        if (content.startsWith('root((') && content.endsWith('))')) {
+          nodeName = content.slice(6, -2)
+        } else if (content.startsWith('::icon')) {
+          return // Ignore icons for now
+        }
+        
+        // Create node
+        const parent = indentationLevel === 0 ? "" : nodes.find(x => x.id === indentationMap.get(indentationLevel - 2)) || "";
+        const isRoot = indentationLevel === 0;
+        const node = createEmptyClientNode(nodeName, isRoot, parent);
+        
+        // Store node
+        nodes.push(node);
+        indentationMap.set(indentationLevel, node.id);
+        console.log("Indentation map: ", indentationMap)
+      });
+    }
+    console.log(nodes)
+    return nodes;
   }
 
   /**

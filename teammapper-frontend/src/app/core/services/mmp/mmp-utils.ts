@@ -1,3 +1,5 @@
+import Node, { NodeProperties } from "@mmp/map/models/node";
+
 const COLORS: string[] = [
   '#FFC107',
   '#2196F3',
@@ -20,4 +22,39 @@ const COLORS: string[] = [
 ];
 const EMPTY_IMAGE_DATA = 'data:,';
 
-export { COLORS, EMPTY_IMAGE_DATA };
+const createEmptyClientNode = (nodeName: string, isRoot: boolean, parent: Node | ""): Node => {
+  return new Node({
+    id: crypto.randomUUID(),
+    parent: parent || null,
+    name: nodeName || "Root Node",
+    coordinates: {
+      x: null,
+      y: null
+    },
+    colors: {
+      name: "#666666",
+      background: "#f5f5f5",
+      branch: "",
+    },
+    image: {
+      src: "",
+      size: 70
+    },
+    font: {
+      style: "normal",
+      size: 26,
+      weight: "normal",
+      decoration: "",
+    },
+    link: {
+      href: ""
+    },
+    locked: false,
+    isRoot: isRoot || false,
+    detached: false,
+    hidden: false,
+    hasHiddenChildNodes: false
+  })
+}
+
+export { COLORS, EMPTY_IMAGE_DATA, createEmptyClientNode };

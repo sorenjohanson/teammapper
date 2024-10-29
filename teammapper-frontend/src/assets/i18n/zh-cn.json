@@ -192,7 +192,7 @@
     "DISMISS": "解除",
     "SAVED_MAPS": "已保存的思维导图",
     "JSON": "文件 (.json)",
-    "MERMAID": "文件 (Mermaid)",
+    "MERMAID": "文件 (Mermaid, .txt)",
     "PNG": "图片 (.png)",
     "SVG": "图片 (.svg)",
     "JPG": "图片 (.jpg)",
