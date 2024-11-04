@@ -191,6 +191,7 @@ export default class History {
      * @return {boolean} result
      */
     private checkSnapshotStructure(snapshot: MapSnapshot): boolean {
+        console.log("Snapshot: ", snapshot)
         if (!Array.isArray(snapshot)) {
             return false
         }
@@ -214,6 +215,7 @@ export default class History {
      * @return {boolean} result
      */
     private checkNodeProperties(node: ExportNodeProperties) {
+        console.log("Checking node properties for node: ", node)
         const conditions: boolean[] = [
             typeof node.id === 'string',
             typeof node.parent === 'string' || node.parent === null,

@@ -138,8 +138,8 @@ export class ToolbarComponent {
     const fileReader = new FileReader();
 
     fileReader.onload = (_fileEvent: Event) => {
-      const jsonMap = this.mmpService.convertMermaidToJSON(fileReader.result.toString())
-      //this.mmpService.importMap(fileReader.result.toString());
+      const jsonString = this.mmpService.convertMermaidToJSON(fileReader.result.toString())
+      this.mmpService.importMap(jsonString);
     };
 
     const fileUpload: HTMLInputElement = event.target as HTMLInputElement;

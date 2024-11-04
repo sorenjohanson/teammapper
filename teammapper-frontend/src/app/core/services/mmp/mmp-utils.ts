@@ -1,4 +1,5 @@
-import Node, { NodeProperties } from "@mmp/map/models/node";
+import { ExportNodeProperties } from "@mmp/map/models/node";
+import * as d3 from 'd3'
 
 const COLORS: string[] = [
   '#FFC107',
@@ -22,8 +23,8 @@ const COLORS: string[] = [
 ];
 const EMPTY_IMAGE_DATA = 'data:,';
 
-const createEmptyClientNode = (nodeName: string, isRoot: boolean, parent: Node | ""): Node => {
-  return new Node({
+const createEmptyClientExportNode = (nodeName: string, isRoot: boolean, parent: string): ExportNodeProperties => {
+  return {
     id: crypto.randomUUID(),
     parent: parent || null,
     name: nodeName || "Root Node",
@@ -53,8 +54,9 @@ const createEmptyClientNode = (nodeName: string, isRoot: boolean, parent: Node |
     isRoot: isRoot || false,
     detached: false,
     hidden: false,
-    hasHiddenChildNodes: false
-  })
+    hasHiddenChildNodes: false,
+    k: d3.randomUniform(-20, 20)()
+  }
 }
 
-export { COLORS, EMPTY_IMAGE_DATA, createEmptyClientNode };
+export { COLORS, EMPTY_IMAGE_DATA, createEmptyClientExportNode };

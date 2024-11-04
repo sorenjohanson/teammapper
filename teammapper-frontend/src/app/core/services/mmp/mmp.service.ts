@@ -15,9 +15,8 @@ import {
   OptionParameters,
   UserNodeProperties,
 } from '@mmp/map/types';
-import { COLORS, EMPTY_IMAGE_DATA, createEmptyClientNode } from './mmp-utils';
+import { COLORS, EMPTY_IMAGE_DATA, createEmptyClientExportNode } from './mmp-utils';
 import { CachedMapOptions } from 'src/app/shared/models/cached-map.model';
-import Node from '@mmp/map/models/node';
 
 /**
  * Mmp wrapper service with mmp and other functions.
@@ -89,6 +88,7 @@ export class MmpService implements OnDestroy {
    */
   public new(map?: MapSnapshot, notifyWithEvent = true) {
     const mapWithCoordinates = this.currentMap.instance.applyCoordinatesToMapSnapshot(map);
+    console.log(mapWithCoordinates)
     this.currentMap.instance.new(mapWithCoordinates, notifyWithEvent);
   }
 
@@ -481,8 +481,7 @@ export class MmpService implements OnDestroy {
   public convertMermaidToJSON(mermaid: string) {
     const lines = mermaid.split('\n')
     const normalizedLines = this.normalizeIndentation(lines);
-    console.log(normalizedLines)
-    const nodes: Node[] = [];
+    const nodes: ExportNodeProperties[] = [];
     const indentationMap = new Map<number, string>();  // Maps indentation level to parent ID
 
     if (lines[0].trim() === 'mindmap') {
@@ -494,7 +493,6 @@ export class MmpService implements OnDestroy {
         // Calculate indentation level
         const indentationLevel = line.search(/\S/);
         const content = line.trim();
-        console.log(`Name: ${content}, Indentation level: ${indentationLevel}`)
         
         // Extract node name
         let nodeName = content.replace(/<br\s*\/>/g, '\n');
@@ -507,18 +505,16 @@ export class MmpService implements OnDestroy {
         }
         
         // Create node
-        const parent = indentationLevel === 0 ? "" : nodes.find(x => x.id === indentationMap.get(indentationLevel - 2)) || "";
+        const parent = indentationLevel === 0 ? "" : nodes.find(x => x.id === indentationMap.get(indentationLevel - 2))?.id || "";
         const isRoot = indentationLevel === 0;
-        const node = createEmptyClientNode(nodeName, isRoot, parent);
+        const node = createEmptyClientExportNode(nodeName, isRoot, parent);
         
         // Store node
         nodes.push(node);
         indentationMap.set(indentationLevel, node.id);
-        console.log("Indentation map: ", indentationMap)
       });
     }
-    console.log(nodes)
-    return nodes;
+    return JSON.stringify(nodes);
   }
 
   /**
