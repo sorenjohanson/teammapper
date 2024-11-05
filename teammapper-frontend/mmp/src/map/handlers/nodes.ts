@@ -737,7 +737,7 @@ export default class Nodes {
         const rootNode = map.find(x => x.isRoot);
         
         map.forEach(node => {
-            if (!node.coordinates) {
+            if (!node.coordinates.x && !node.coordinates.y) {
                 node.coordinates = this.calculateNodeCoordinates(
                     node,
                     {
