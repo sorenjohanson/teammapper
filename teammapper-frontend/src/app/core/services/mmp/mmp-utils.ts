@@ -28,10 +28,6 @@ const createEmptyClientExportNode = (nodeName: string, isRoot: boolean, parent: 
     id: crypto.randomUUID(),
     parent: parent || null,
     name: nodeName || "Root Node",
-    coordinates: {
-      x: null,
-      y: null
-    },
     colors: {
       name: "#666666",
       background: "#f5f5f5",
@@ -45,7 +41,6 @@ const createEmptyClientExportNode = (nodeName: string, isRoot: boolean, parent: 
       style: "normal",
       size: 26,
       weight: "normal",
-      decoration: "",
     },
     link: {
       href: ""

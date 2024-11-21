@@ -501,6 +501,7 @@ export class MmpService implements OnDestroy {
     if (lines[0].trim() === 'mindmap') {
       // Process each line
       normalizedLines.forEach(line => {
+        console.log(line)
         // Skip the mindmap declaration
         if (line.trim() === 'mindmap') return;
         
