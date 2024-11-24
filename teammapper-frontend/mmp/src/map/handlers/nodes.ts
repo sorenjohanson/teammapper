@@ -533,6 +533,7 @@ export default class Nodes {
         node: Node | ExportNodeProperties, 
         rootNode?: Node | ExportNodeProperties
     ): boolean | undefined {
+        console.log(`Getting orientation for node ${JSON.stringify(node)}\n\nRoot node is ${JSON.stringify(rootNode)}`)
         // isRoot exists only on Node type, so type guard is needed
         if ('isRoot' in node && node.isRoot) {
             return;
@@ -703,6 +704,7 @@ export default class Nodes {
             x: nodeParent?.coordinates?.x ?? (node.coordinates?.x ?? 0),
             y: nodeParent?.coordinates?.y ?? (node.coordinates?.y ?? 0)
         };
+        node.coordinates = coordinates;
     
         let siblings = params.getSiblings();
     
@@ -728,7 +730,7 @@ export default class Nodes {
         } else if (!node.detached) {
             if (nodeParent && params.getOrientation(nodeParent)) {
                 coordinates.x -= NODE_HORIZONTAL_SPACING;
-            } else {
+            } else if (!node.isRoot) {
                 coordinates.x += NODE_HORIZONTAL_SPACING;
             }
         }
@@ -736,10 +738,10 @@ export default class Nodes {
         if (siblings.length > 0) {
             const lowerNode = this.getLowerNode(siblings)
             coordinates.y = (lowerNode?.coordinates?.y ?? 0) + NODE_VERTICAL_SIBLING_OFFSET;
-        } else if (!node.detached) {
+        } else if (!node.detached && !node.isRoot) {
             coordinates.y -= NODE_VERTICAL_SPACING;
         }
-    
+
         return coordinates;
     }
 
