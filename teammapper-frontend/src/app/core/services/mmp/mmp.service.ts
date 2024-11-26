@@ -520,15 +520,18 @@ export class MmpService implements OnDestroy {
         }
         
         // Create node
-        const parent = indentationLevel === 0 ? "" : nodes.find(x => x.id === indentationMap.get(indentationLevel - 2))?.id || "";
+        const parent = indentationLevel === 0 ? null : nodes.find(x => x.id === indentationMap.get(indentationLevel - 2))?.id || null;
         const isRoot = indentationLevel === 0;
-        const node = createEmptyClientExportNode(nodeName, isRoot, parent);
+        const k = Math.random() * 40 - 20; // Simple random between -20 and 20
+        const node = {...createEmptyClientExportNode(nodeName, isRoot, parent), k};
         
         // Store node
         nodes.push(node);
         indentationMap.set(indentationLevel, node.id);
       });
     }
+
+    console.log(JSON.stringify(nodes))
     return JSON.stringify(nodes);
   }
 

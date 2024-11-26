@@ -530,21 +530,20 @@ export default class Nodes {
      * @return {boolean}
      */
     public getOrientation(
-        node: Node | ExportNodeProperties, 
+        node: Node | ExportNodeProperties,
         rootNode?: Node | ExportNodeProperties
     ): boolean | undefined {
-        console.log(`Getting orientation for node ${JSON.stringify(node)}\n\nRoot node is ${JSON.stringify(rootNode)}`)
         // isRoot exists only on Node type, so type guard is needed
         if ('isRoot' in node && node.isRoot) {
             return;
         }
-    
+
         // For Node type, use this.getRoot() if rootNode not provided
         const root = rootNode ?? (('isRoot' in node) ? this.getRoot() : undefined);
         if (!root) {
             return;
         }
-    
+
         return (node.coordinates?.x ?? 0) < (root.coordinates?.x ?? 0);
     }
 
@@ -699,50 +698,67 @@ export default class Nodes {
         }
     ): Coordinates {
         const nodeParent = params.nodeParent;
-        
+
         let coordinates: Coordinates = {
             x: nodeParent?.coordinates?.x ?? (node.coordinates?.x ?? 0),
             y: nodeParent?.coordinates?.y ?? (node.coordinates?.y ?? 0)
         };
         node.coordinates = coordinates;
-    
+
         let siblings = params.getSiblings();
-    
+
+        const baseOrientation = this.determineBaseOrientation(node, nodeParent, params.getOrientation);
+
         if (nodeParent && params.isRoot) {
             // This will go through sibling nodes and assign them to the left or to the right depending on the orientation of the sibling node
             const [leftNodes, rightNodes] = siblings.reduce<[(Node | ExportNodeProperties)[], (Node | ExportNodeProperties)[]]>(
                 (acc, sibling) => {
-                    params.getOrientation(sibling) 
-                        ? acc[0].push(sibling) 
+                    params.getOrientation(sibling)
+                        ? acc[0].push(sibling)
                         : acc[1].push(sibling);
                     return acc;
                 },
                 [[], []]
             );
-    
+
             if (leftNodes.length <= rightNodes.length) {
-                coordinates.x -= NODE_HORIZONTAL_SPACING;
+                node.coordinates.x -= NODE_HORIZONTAL_SPACING;
                 siblings = leftNodes;
             } else {
-                coordinates.x += NODE_HORIZONTAL_SPACING;
+                node.coordinates.x += NODE_HORIZONTAL_SPACING;
                 siblings = rightNodes;
             }
         } else if (!node.detached) {
-            if (nodeParent && params.getOrientation(nodeParent)) {
-                coordinates.x -= NODE_HORIZONTAL_SPACING;
-            } else if (!node.isRoot) {
-                coordinates.x += NODE_HORIZONTAL_SPACING;
+            // For deeper nested nodes, use the base orientation
+            if (baseOrientation === 'left') {
+                node.coordinates.x = (nodeParent?.coordinates?.x ?? 0) - NODE_HORIZONTAL_SPACING;
+            } else if (baseOrientation === 'right') {
+                node.coordinates.x = (nodeParent?.coordinates?.x ?? 0) + NODE_HORIZONTAL_SPACING;
             }
         }
-    
+
+        // Enhanced vertical positioning
         if (siblings.length > 0) {
-            const lowerNode = this.getLowerNode(siblings)
-            coordinates.y = (lowerNode?.coordinates?.y ?? 0) + NODE_VERTICAL_SIBLING_OFFSET;
+            // Get all nodes at the same level on this side
+            const nodesAtSameLevel = this.getNodesAtSameLevel(node, baseOrientation);
+            const lowerNode = this.getLowerNode(nodesAtSameLevel);
+            node.coordinates.y = (lowerNode?.coordinates?.y ?? 0) + NODE_VERTICAL_SIBLING_OFFSET;
         } else if (!node.detached && !node.isRoot) {
-            coordinates.y -= NODE_VERTICAL_SPACING;
+            // First child of a parent
+            const parentSiblings = nodeParent ? params.getSiblings() : [];
+            if (parentSiblings.length > 0) {
+                // Position relative to parent's siblings
+                const lowerParentSibling = this.getLowerNode(parentSiblings);
+                node.coordinates.y = Math.max(
+                    (nodeParent?.coordinates?.y ?? 0) - NODE_VERTICAL_SPACING,
+                    (lowerParentSibling?.coordinates?.y ?? 0) + NODE_VERTICAL_SIBLING_OFFSET
+                );
+            } else {
+                node.coordinates.y = (nodeParent?.coordinates?.y ?? 0) - NODE_VERTICAL_SPACING;
+            }
         }
 
-        return coordinates;
+        return node.coordinates;
     }
 
     /**
@@ -763,16 +779,113 @@ export default class Nodes {
         );
     }
 
+    private determineBaseOrientation(
+        node: Node | ExportNodeProperties,
+        nodeParent: (Node | ExportNodeProperties) | null,
+        getOrientation: (n: Node | ExportNodeProperties) => boolean | undefined
+    ): 'left' | 'right' {
+        // Traverse up to find the first-level parent
+        let currentNode = node;
+        let currentParent = nodeParent;
+
+        while (currentParent && !('isRoot' in currentParent && currentParent.isRoot)) {
+            currentNode = currentParent;
+            currentParent = node.parent as Node; // TODO: does this work?
+        }
+
+        // Use the first-level parent's orientation
+        return getOrientation(currentNode) ? 'left' : 'right';
+    }
+
+    /**
+ * Gets all nodes that are at the same hierarchical level and orientation as the given node
+ */
+    private getNodesAtSameLevel(
+        node: Node | ExportNodeProperties,
+        orientation: 'left' | 'right'
+    ): (Node | ExportNodeProperties)[] {
+        // Get the depth of our target node from root
+        const nodeDepth = this.getNodeDepth(node);
+
+        // Get root node
+        const rootNode = this.getNodes().find(n => n.isRoot);
+        if (!rootNode) return [];
+
+        // Get all descendants of root
+        const allDescendants = this.getDescendants(rootNode);
+
+        // Filter descendants to get nodes that:
+        // 1. Are at the same depth from root
+        // 2. Are already positioned (have coordinates)
+        // 3. Are on the same side as our target node
+        // 4. Are not the node itself
+        return allDescendants.filter(descendant => {
+            const descendantDepth = this.getNodeDepth(descendant);
+            const descendantOrientation = this.determineBaseOrientation(
+                descendant,
+                descendant.parent,
+                this.getOrientation.bind(this)
+            );
+
+            return descendantDepth === nodeDepth &&
+                descendant.coordinates &&
+                descendantOrientation === orientation &&
+                descendant.id !== node.id;
+        });
+    }
+
+    /**
+ * Calculate the depth of a node from the root
+ */
+    private getNodeDepth(node: Node | ExportNodeProperties): number {
+        let depth = 0;
+        let currentNode = node;
+
+        while ('parent' in currentNode && currentNode.parent) {
+            depth++;
+            const parentId = typeof currentNode.parent === 'string'
+                ? currentNode.parent
+                : currentNode.parent.id;
+
+            // Find the parent node from the nodes collection
+            currentNode = this.getNodes().find(n => n.id === parentId) as Node;
+            if (!currentNode) break;
+        }
+
+        return depth;
+    }
+
     public applyCoordinatesToMapSnapshot = (mapSnapshot: MapSnapshot): MapSnapshot => {
+        const getNodesInProcessingOrder = (mapSnapshot: MapSnapshot): ExportNodeProperties[] => {
+            const rootNode = mapSnapshot.find(x => x.isRoot);
+            if (!rootNode) return [];
+
+            const processedNodes: ExportNodeProperties[] = [rootNode];
+            const processLevel = (parentId: string) => {
+                const children = mapSnapshot.filter(node => node.parent === parentId);
+
+                processedNodes.push(...children);
+
+                children.forEach(child => {
+                    processLevel(child.id);
+                });
+            };
+
+            // Start processing from root
+            processLevel(rootNode.id);
+
+            return processedNodes;
+        }
+
+        const orderedNodes = getNodesInProcessingOrder(mapSnapshot);
         const rootNode = mapSnapshot.find(x => x.isRoot);
-        
-        return mapSnapshot.map(node => {
+
+        const processedNodes = new Array(mapSnapshot.length);
+
+        orderedNodes.forEach(node => {
+            const nodeIndex = mapSnapshot.findIndex(x => x.id === node.id);
+
             if (!node.coordinates) {
-                /**
-                 * Since we're working with a JSON snapshot here, none of the nodes actually exist.
-                 * This makes existing methods such as this.getSiblings() useless, because they only work with existing nodes.
-                 * So here, we pass on methods that work directly with the JSON.
-                 */
                 node.coordinates = this.calculateNodeCoordinates(
                     node,
                     {
@@ -784,8 +897,11 @@ export default class Nodes {
                 );
             }
 
-            return node
+            processedNodes[nodeIndex] = node;
         });
+
+        // Fill in any gaps with original nodes (though there shouldn't be any)
+        return processedNodes.map((node, index) => node || mapSnapshot[index]);
     }
 
     /**
@@ -797,11 +913,11 @@ export default class Nodes {
         if (nodes.length === 0) {
             return;
         }
-    
+
         return nodes.reduce((lowest, current) => {
             const lowestY = lowest.coordinates?.y ?? 0;
             const currentY = current.coordinates?.y ?? 0;
-            
+
             return currentY > lowestY ? current : lowest;
         }, nodes[0]);
     }
@@ -1163,7 +1279,7 @@ export default class Nodes {
      */
     private moveSelectionOnBranch(direction: boolean) {
         if ((!this.getOrientation(this.selectedNode) && direction) ||
-        (this.getOrientation(this.selectedNode) && !direction)) {
+            (this.getOrientation(this.selectedNode) && !direction)) {
             this.selectNode(this.selectedNode.parent.id)
         } else {
             let children = this.getChildren(this.selectedNode)
